@@ -45,25 +45,11 @@ defaults write com.apple.AppleMultitouchMouse MouseOneFingerDoubleTapGesture -in
 defaults write com.apple.driver.AppleBluetoothMultitouch.mouse MouseOneFingerDoubleTapGesture -int 1
 info "마우스 설정 완료 (최고 속도, 보조 클릭, 스마트 줌)"
 
-# Dock
+# Dock (기본 설정만 — 앱 정리는 Homebrew 설치 후 dockutil로 처리)
 defaults write com.apple.dock tilesize -int 48
 defaults write com.apple.dock show-recents -bool false
 defaults write com.apple.dock minimize-to-application -bool true
-
-add_dock_app() {
-    defaults write com.apple.dock persistent-apps -array-add \
-        "<dict><key>tile-data</key><dict><key>file-data</key><dict>\
-<key>_CFURLString</key><string>$1</string>\
-<key>_CFURLStringType</key><integer>0</integer>\
-</dict></dict></dict>"
-}
-
-defaults write com.apple.dock persistent-apps -array
-add_dock_app "/System/Applications/Messages.app"
-add_dock_app "/System/Applications/Calendar.app"
-add_dock_app "/System/Applications/System Settings.app"
-killall Dock 2>/dev/null || true
-info "Dock 정리 완료 (Messages, Calendar, System Settings)"
+info "Dock 기본 설정 완료 (크기, 최근 항목 끔, 최소화 방식)"
 
 # Finder
 defaults write com.apple.finder NewWindowTarget -string "PfLo"
@@ -176,6 +162,40 @@ fi
 echo ""
 
 # =========================================================
+# Phase 3.5: Dock 앱 정리 (dockutil — macOS 버전 무관하게 안정적)
+# =========================================================
+echo "--- Dock 앱 정리 ---"
+echo ""
+
+brew install dockutil 2>/dev/null || true
+
+if command -v dockutil &>/dev/null; then
+    dockutil --remove all --no-restart 2>/dev/null || true
+
+    for app in \
+        "/System/Applications/Messages.app" \
+        "/System/Applications/Calendar.app"; do
+        if [[ -d "$app" ]]; then
+            dockutil --add "$app" --no-restart 2>/dev/null || true
+        fi
+    done
+
+    # macOS 13+ 은 System Settings, 이전 버전은 System Preferences
+    if [[ -d "/System/Applications/System Settings.app" ]]; then
+        dockutil --add "/System/Applications/System Settings.app" --no-restart 2>/dev/null || true
+    elif [[ -d "/System/Applications/System Preferences.app" ]]; then
+        dockutil --add "/System/Applications/System Preferences.app" --no-restart 2>/dev/null || true
+    fi
+
+    killall Dock 2>/dev/null || true
+    info "Dock 정리 완료 (Messages, Calendar, System Settings)"
+else
+    warn "dockutil 설치 실패 — Dock 앱을 수동으로 정리하세요"
+fi
+
+echo ""
+
+# =========================================================
 # Phase 4: 기본 앱 설치 (bundles)
 # =========================================================
 echo "--- 기본 앱 설치 ---"
@@ -195,6 +215,14 @@ if confirm "터미널 설치? (iTerm2)"; then
     info "iTerm2 설치 완료"
 else
     warn "터미널 설치 건너뜀"
+fi
+
+# 개발 도구
+if confirm "개발 도구 설치? (GitHub CLI - gh)"; then
+    brew install gh 2>/dev/null || true
+    info "GitHub CLI (gh) 설치 완료"
+else
+    warn "GitHub CLI 설치 건너뜀"
 fi
 
 # 런처
