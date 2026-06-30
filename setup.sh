@@ -35,7 +35,8 @@ defaults write NSGlobalDomain InitialKeyRepeat -int 10
 defaults write NSGlobalDomain NSAutomaticSpellingCorrectionEnabled -bool false
 defaults write NSGlobalDomain NSAutomaticCapitalizationEnabled -bool false
 defaults write NSGlobalDomain NSAutomaticPeriodSubstitutionEnabled -bool false
-info "키보드 설정 완료 (빠른 반복, 자동교정 끔)"
+defaults write NSGlobalDomain TISRomanSwitchState -bool false
+info "키보드 설정 완료 (빠른 반복, 자동교정 끔, Caps Lock ABC 전환 끔)"
 
 # 마우스
 defaults write NSGlobalDomain com.apple.mouse.scaling -float 3.0
@@ -107,8 +108,12 @@ sudo launchctl bootstrap system /Library/LaunchAgents/userkeymapping.plist
 /Users/Shared/bin/userkeymapping > /dev/null 2>&1
 info "키 리매핑 완료 (Right Cmd → F18, Caps Lock → Ctrl)"
 
-# 입력 소스 전환 단축키 → F18
+# 61번 (입력 메뉴에서 다음 소스 선택) 비활성화 — Ctrl+Option+Space 충돌 방지
 defaults write com.apple.symbolichotkeys.plist AppleSymbolicHotKeys -dict-add 61 \
+  "<dict><key>enabled</key><false/></dict>"
+
+# 입력 소스 전환 단축키 → F18 (이전 입력 소스 선택 = 60번)
+defaults write com.apple.symbolichotkeys.plist AppleSymbolicHotKeys -dict-add 60 \
   "<dict>
     <key>enabled</key><true/>
     <key>value</key><dict>
@@ -116,7 +121,7 @@ defaults write com.apple.symbolichotkeys.plist AppleSymbolicHotKeys -dict-add 61
       <key>parameters</key><array>
         <integer>65535</integer>
         <integer>79</integer>
-        <integer>0</integer>
+        <integer>8388608</integer>
       </array>
     </dict>
   </dict>"
